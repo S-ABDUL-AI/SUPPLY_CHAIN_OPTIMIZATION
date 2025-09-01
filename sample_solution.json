@@ -1,0 +1,45 @@
+{
+  "status": "SUCCESS",
+  "routes": [
+    {
+      "vehicle_id": 0,
+      "route": [
+        0,
+        7,
+        2,
+        3,
+        0
+      ],
+      "load": 30,
+      "distance_m": 7422
+    },
+    {
+      "vehicle_id": 1,
+      "route": [
+        0,
+        9,
+        1,
+        6,
+        8,
+        0
+      ],
+      "load": 28,
+      "distance_m": 11603
+    },
+    {
+      "vehicle_id": 2,
+      "route": [
+        0,
+        4,
+        10,
+        5,
+        0
+      ],
+      "load": 29,
+      "distance_m": 3747
+    }
+  ],
+  "total_distance_m": 22772,
+  "total_load": 87,
+  "vehicle_capacity": 30
+}

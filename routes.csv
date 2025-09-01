@@ -1,0 +1,12 @@
+id,lat,lon,demand,description
+0,40.712776,-74.005974,0,Depot - New York City
+1,40.73061,-73.935242,10,Customer 1 - Brooklyn
+2,40.761581,-73.980142,15,Customer 2 - Midtown
+3,40.748817,-73.985428,8,Customer 3 - Empire State
+4,40.706192,-74.00916,12,Customer 4 - Financial District
+5,40.730823,-73.997332,6,Customer 5 - Greenwich Village
+6,40.752726,-73.977229,4,Customer 6 - Grand Central
+7,40.758896,-73.98513,7,Customer 7 - Times Sq
+8,40.748441,-73.985664,5,Customer 8 - Herald Sq
+9,40.712217,-73.984284,9,Customer 9 - Chinatown
+10,40.729513,-73.99646,11,Customer 10 - NYU Area
