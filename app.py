@@ -16,6 +16,7 @@ st.set_page_config(
 
 
 CO2_KG_PER_KM = 0.27
+BUILD_VERSION = "0f-verification-tag"
 PALETTE = [
     [239, 68, 68],
     [34, 197, 94],
@@ -298,6 +299,7 @@ st.caption(
     "Minimize total distance with vehicle capacity constraints — typical last-mile routing demo. "
     "Distances use planar meters (scaled), swap in a road matrix for production."
 )
+st.caption(f"Build: `{BUILD_VERSION}`")
 
 uploaded = st.file_uploader(
     "Upload stops (CSV): columns id, lat, lon, demand — or use default routes.csv",
