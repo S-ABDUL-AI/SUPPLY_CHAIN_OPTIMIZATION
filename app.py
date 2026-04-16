@@ -380,23 +380,6 @@ if solve_btn:
 
     co2_saved_kg = max(delta_km, 0.0) * CO2_KG_PER_KM
 
-    # Headline insight first: put the key business takeaway above all visuals.
-    if delta_km > 0.01:
-        st.success(
-            f"### Headline Insight: Optimization cuts route length by **{delta_km:,.2f} km** "
-            f"and avoids about **{co2_saved_kg:,.2f} kg CO2** versus the manual plan."
-        )
-    elif abs(delta_km) <= 0.01:
-        st.info(
-            "### Headline Insight: Optimized and manual distance are effectively tied in this scenario. "
-            "Adjust fleet size, capacity, or depot to unlock additional gains."
-        )
-    else:
-        st.warning(
-            f"### Headline Insight: Manual routing is currently **{abs(delta_km):,.2f} km shorter** than the optimized run. "
-            "Try increasing solve time or revisiting constraints."
-        )
-
     k1, k2, k3 = st.columns(3)
     with k1:
         st.metric(
@@ -431,6 +414,12 @@ if solve_btn:
             st.pydeck_chart(build_route_map(optimized["routes"], locations, "Optimized Route"), use_container_width=True)
     else:
         st.pydeck_chart(build_route_map(optimized["routes"], locations, "Optimized Route"), use_container_width=True)
+
+    headline = (
+        f"**Headline insight:** Optimized routing cuts **{max(delta_km, 0.0):.2f} km** vs manual dispatch, "
+        f"saves about **{co2_saved_kg:.2f} kg CO2**, and runs fleet utilization at **{opt_util:.1f}%**."
+    )
+    st.success(headline)
 
     details = []
     for r in optimized["routes"]:
