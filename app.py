@@ -293,45 +293,46 @@ def build_export_df(route_paths: list[dict], all_locations: list[tuple[float, fl
     return pd.DataFrame(rows)
 
 
-st.title("Logistics Command Center: CVRP Fleet Intelligence")
+st.title("Capacitated vehicle routing (CVRP)")
 st.caption(
-    "Solve the Capacitated Vehicle Routing Problem (CVRP) with OR-Tools and compare a manual dispatch policy "
-    "against optimized routes in one operational screen."
+    "Minimize total distance with vehicle capacity constraints — typical last-mile routing demo. "
+    "Distances use planar meters (scaled), swap in a road matrix for production."
 )
 
 uploaded = st.file_uploader(
-    "Upload customer stops CSV (`id`, `lat`/`latitude`, `lon`/`longitude`, `demand`) or use bundled routes.csv",
+    "Upload stops (CSV): columns id, lat, lon, demand — or use default routes.csv",
     type=["csv"],
 )
 if uploaded is not None:
     try:
         data = normalize_routes_df(pd.read_csv(uploaded))
-        st.success("Custom route file loaded.")
+        st.success("Custom file loaded.")
     except Exception as e:
         st.error(str(e))
         st.stop()
 else:
     raw = load_default_routes()
     if raw is None:
-        st.error("Default `routes.csv` is missing.")
+        st.error("Default routes.csv not found in app directory.")
         st.stop()
     data = normalize_routes_df(raw)
     st.info("Using bundled routes.csv.")
 
-st.sidebar.header("Logistics Scenario")
-num_vehicles = st.sidebar.number_input("Fleet size (vehicles)", min_value=1, max_value=50, value=3)
-vehicle_capacity = st.sidebar.number_input("Vehicle capacity (units)", min_value=1, max_value=100_000, value=30)
-solver_time = st.sidebar.slider("Optimization time limit (sec)", 3, 120, 20)
-demand_multiplier = st.sidebar.slider("Demand multiplier", min_value=0.5, max_value=2.0, value=1.0, step=0.05)
+st.subheader("Stops preview")
+st.dataframe(data.head(20), use_container_width=True, hide_index=True)
 
-depot_options = [f"{idx}: {row['id']}" for idx, row in data.iterrows()]
-depot_pick = st.sidebar.selectbox("Depot location (node)", options=depot_options, index=0)
-depot_idx = int(depot_pick.split(":")[0])
+st.sidebar.header("Solver")
+num_vehicles = st.sidebar.number_input("Vehicles", min_value=1, max_value=20, value=3)
+vehicle_capacity = st.sidebar.number_input("Capacity per vehicle (units)", min_value=1, max_value=10_000, value=30)
+solver_time = st.sidebar.slider("Time limit (seconds)", 5, 120, 15)
 
-compare_mode = st.sidebar.toggle("Scenario comparison: Manual vs Optimized", value=True)
+with st.sidebar.expander("Advanced settings"):
+    demand_multiplier = st.slider("Demand multiplier", min_value=0.5, max_value=2.0, value=1.0, step=0.05)
+    depot_options = [f"{idx}: {row['id']}" for idx, row in data.iterrows()]
+    depot_pick = st.selectbox("Depot node", options=depot_options, index=0)
+depot_idx = int(depot_pick.split(":")[0]) if "depot_pick" in locals() else 0
 
 st.sidebar.markdown("---")
-st.sidebar.caption("Directional markers: route labels show visit sequence.")
 st.sidebar.markdown(
     "**Sherriff Abdul-Hamid**  \n"
     "[GitHub](https://github.com/S-ABDUL-AI) · "
@@ -340,23 +341,11 @@ st.sidebar.markdown(
 
 working = data.copy()
 working["demand"] = np.maximum(np.round(working["demand"] * demand_multiplier).astype(int), 0)
-
 locations = list(zip(working["lat"], working["lon"]))
 demands = working["demand"].tolist()
 distance_matrix = euclidean_meters_matrix(locations)
 
-manual = build_naive_manual_routes(
-    locations=locations,
-    demands=demands,
-    depot_idx=depot_idx,
-    num_vehicles=int(num_vehicles),
-    vehicle_capacity=int(vehicle_capacity),
-    distance_matrix=distance_matrix,
-)
-
-solve_btn = st.button("Run route optimization", type="primary", use_container_width=True)
-
-if solve_btn:
+if st.button("Run optimization", type="primary"):
     optimized = solve_cvrp(
         locations=locations,
         demands=demands,
@@ -367,90 +356,40 @@ if solve_btn:
         solver_time=int(solver_time),
     )
     if optimized is None:
-        st.warning("No feasible solution found. Increase fleet size, capacity, or reduce demand multiplier.")
+        st.warning("No feasible solution — raise capacity or add vehicles.")
         st.stop()
 
-    opt_km = optimized["total_distance_m"] / 1000.0
-    man_km = manual["total_distance_m"] / 1000.0
-    delta_km = man_km - opt_km
+    total_distance = optimized["total_distance_m"]
+    max_load = int(max((r["load"] for r in optimized["routes"]), default=0))
 
-    opt_util = optimized["avg_util_pct"]
-    man_util = manual["avg_util_pct"]
-    util_delta = opt_util - man_util
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Total distance (m, approx.)", f"{total_distance:,}")
+    m2.metric("Vehicles used", optimized["vehicles_used"])
+    m3.metric("Max load on a route", max_load)
 
-    co2_saved_kg = max(delta_km, 0.0) * CO2_KG_PER_KM
-
-    k1, k2, k3 = st.columns(3)
-    with k1:
-        st.metric(
-            "Total Fleet Distance",
-            f"{opt_km:,.2f} km",
-            delta=f"{delta_km:+.2f} km vs manual (Optimized)",
-            delta_color="normal" if delta_km >= 0 else "inverse",
-        )
-    with k2:
-        st.metric(
-            "Vehicle Utilization %",
-            f"{opt_util:.1f}%",
-            delta=f"{util_delta:+.1f} pts vs manual",
-            delta_color="normal" if util_delta >= 0 else "inverse",
-        )
-    with k3:
-        st.metric(
-            "CO2 Emissions Saved",
-            f"{co2_saved_kg:,.2f} kg",
-            delta=f"{max(delta_km, 0.0):.2f} km avoided",
-            delta_color="normal" if co2_saved_kg > 0 else "off",
-        )
-
-    st.subheader("Route map")
-    if compare_mode:
-        c_left, c_right = st.columns(2)
-        with c_left:
-            st.markdown("**Manual Route (baseline)**")
-            st.pydeck_chart(build_route_map(manual["routes"], locations, "Manual Route"), use_container_width=True)
-        with c_right:
-            st.markdown("**Optimized Route (OR-Tools)**")
-            st.pydeck_chart(build_route_map(optimized["routes"], locations, "Optimized Route"), use_container_width=True)
-    else:
-        st.pydeck_chart(build_route_map(optimized["routes"], locations, "Optimized Route"), use_container_width=True)
-
-    headline = (
-        f"**Headline insight:** Optimized routing cuts **{max(delta_km, 0.0):.2f} km** vs manual dispatch, "
-        f"saves about **{co2_saved_kg:.2f} kg CO2**, and runs fleet utilization at **{opt_util:.1f}%**."
-    )
-    st.success(headline)
-
-    details = []
     for r in optimized["routes"]:
-        details.append(
-            {
-                "vehicle": r["vehicle_id"],
-                "distance_km": round(r["distance_m"] / 1000.0, 3),
-                "load": r["load"],
-                "capacity_util_pct": round(min(1.0, r["capacity_ratio"]) * 100.0, 1),
-            }
+        if len([n for n in r["nodes"] if n != depot_idx]) == 0:
+            continue
+        st.write(
+            f"**Vehicle {r['vehicle_id']}** — load **{int(r['load'])}** units · distance **{int(r['distance_m']):,}** m"
         )
-    st.subheader("Vehicle-level breakdown")
-    st.dataframe(pd.DataFrame(details), use_container_width=True, hide_index=True)
 
-    opt_export = build_export_df(optimized["routes"], locations)
+    st.subheader("Map")
+    st.pydeck_chart(build_route_map(optimized["routes"], locations, "Optimized route"), use_container_width=True)
+
+    export_df = build_export_df(optimized["routes"], locations)
     c1, c2 = st.columns(2)
     with c1:
         st.download_button(
-            "Download optimized routes (CSV)",
-            opt_export.to_csv(index=False),
+            "Download routes CSV",
+            export_df.to_csv(index=False),
             "optimized_routes.csv",
             "text/csv",
         )
     with c2:
         st.download_button(
-            "Download optimized routes (JSON)",
+            "Download routes JSON",
             json.dumps(optimized["routes"], indent=2),
             "optimized_routes.json",
             "application/json",
         )
-else:
-    st.info("Set fleet and demand assumptions in the sidebar, then click **Run route optimization**.")
-    st.subheader("Input preview")
-    st.dataframe(working.head(30), use_container_width=True, hide_index=True)
