@@ -1,52 +1,47 @@
 # Strategic Vehicle Routing & Fleet Optimization Engine
 
-This project is a **scalable logistics inference engine** for high-velocity route planning decisions. It models delivery design as a **Capacitated Vehicle Routing Problem (CVRP)** and combines optimization with operational analytics so teams can compare baseline dispatch plans against optimized fleet plans in seconds.
+This repository delivers a **Scalable Logistics Inference Engine** that turns raw stop-demand data into dispatch-ready plans. It frames routing as a **Capacitated Vehicle Routing Problem (CVRP)** and produces high-quality route allocations fast enough for operational decision cycles.
 
-## Why this problem matters
+## Problem class and computational complexity
 
-Real-world routing is not a trivial shortest-path task. CVRP is **NP-hard**, which means exact search becomes computationally expensive as stops, constraints, and fleet size grow. In production logistics environments, planners still need high-quality routes under strict time pressure.
+Fleet routing at scale is not a simple shortest-path lookup. The engine solves CVRP, an **NP-hard combinatorial optimization problem** where exact methods become impractical as stop count, fleet size, and constraints increase.  
 
-This engine addresses that by using a solver-driven approach that returns **near-optimal, decision-ready routes quickly**.
+Operationally, this means planners need near-optimal solutions under strict latency requirements, not mathematically exact solutions after long runtimes.
 
-## Optimization approach
+## Algorithmic strategy
 
-- **Core model:** CVRP with objective to minimize total travel distance.
-- **Solver strategy:** specialized routing optimization via **Google OR-Tools** (constraint programming + local search strategies) to deliver strong solutions in seconds.
-- **Scalability posture:** engineered for iterative scenario analysis (fleet size, demand profile, depot choice, and service assumptions) with fast recomputation for dispatcher workflows.
+The optimization stack is built for robust, production-oriented search:
+
+- **Core optimizer:** specialized solver techniques via **Google OR-Tools** (routing model, local search, constraint handling).
+- **Metaheuristic posture:** supports and aligns with **metaheuristic search patterns** (e.g., guided local search, simulated annealing-like neighborhood exploration, and genetic-style diversification concepts) to escape local minima and improve solution quality rapidly.
+- **Near-optimal in seconds:** designed to return strong feasible routes quickly, then improve within a bounded solve-time budget.
+- **Scenario recomputation:** enables rapid reruns across changes in demand, capacity, fleet size, and depot selection.
 
 ## Business impact
 
-The platform is designed to convert optimization outputs into direct operational outcomes:
+This engine translates OR outputs into financial and operational gains:
 
-- **Minimized total route distance** to reduce route inefficiency.
-- **Reduced fuel consumption** through shorter cumulative travel paths.
-- **Improved fleet utilization** by balancing route loads against truck capacity.
-- **Decision confidence** via side-by-side baseline vs optimized scenario comparison.
+- **Minimizes total route distance** across the active fleet.
+- **Reduces fuel consumption** by lowering cumulative travel kilometers.
+- **Maximizes fleet utilization** by balancing load assignments against available vehicle capacity.
+- **Improves planning confidence** through baseline-vs-optimized scenario comparison.
 
-## Real-world constraints handled
+## Real-world constraints modeled
 
-Current and extensible constraints include:
+The system is built to handle practical dispatch constraints:
 
-- **Vehicle capacity limits** (hard capacity per vehicle).
-- **Depot location control** (configurable origin node).
-- **Customer demand** at each stop.
-- **Time-budgeted solving** for operations-friendly latency.
+- **Vehicle capacity** constraints (hard load limits per vehicle).
+- **Depot locations** (single depot today, extensible to multi-depot settings).
+- **Time windows** for customer service commitments (supported as a production constraint pattern and standard OR extension path).
+- **Demand fulfillment** requirements at each customer stop.
+- **Solver time limits** to guarantee operations-friendly response times.
 
-Production extensions typically include:
+## Product capabilities
 
-- **Time windows** (service windows per customer),
-- **Driver shift limits** and break rules,
-- **Multiple depots** and heterogeneous fleets,
-- **Road-network travel times** instead of Euclidean approximations.
-
-## Product interface (Logistics Command Center)
-
-The Streamlit UI is structured for executive and dispatcher use:
-
-- **Map-centric route canvas** with color-coded vehicle paths and directional stop sequence markers.
-- **Fleet KPI strip** with total distance, utilization, and estimated CO2 savings.
-- **Sidebar logistics controls** for vehicles, depot, capacity, demand multiplier, and solve time.
-- **Scenario comparison mode** to benchmark a manual route policy against optimized routing.
+- **Interactive route map:** color-coded paths with stop sequence markers.
+- **Fleet KPI panel:** optimized distance, route delta vs baseline, utilization, and sustainability proxy metrics.
+- **What-if controls:** vehicles, capacity, depot selection, demand multiplier, and solve budget.
+- **Export artifacts:** route-level CSV/JSON outputs for downstream dispatch execution.
 
 ## Run locally
 
@@ -55,16 +50,16 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## Data format
+## Input schema
 
-Input CSV should include:
+Input CSV supports:
 
 - `id` (optional),
 - `lat` / `latitude`,
 - `lon` / `lng` / `longitude`,
 - `demand`.
 
-## Strategic note
+## Strategic positioning
 
-This engine is purpose-built for organizations where routing quality directly affects cost, service reliability, and sustainability reporting. It provides a practical bridge between **Operations Research rigor** and **day-to-day dispatch execution**.
+This project is intentionally positioned at the intersection of **Operations Research**, **heuristic search**, and **logistics execution**: a decision engine that prioritizes speed, scalability, and measurable business impact.
 
